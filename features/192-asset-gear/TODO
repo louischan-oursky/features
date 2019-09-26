@@ -1,0 +1,121 @@
+1. Asset Gear
+  - Use single bucket for all apps.
+
+1. Specify Asset Gear API
+
+ - POST /_asset/presign
+   Require Master Key
+
+   {
+     "content_type": "media type",
+     "content_md5": "md5",
+     "content_length": 123
+   }
+
+   Validate the content type.
+   Generate a random filename.
+   Derive file extension from content type.
+   If file extension is found, use the first one and append it to filename.
+   Set asset id to filename.
+   /<app-id>/<asset-id>
+   Include
+     `x-amz-meta-content-type`
+     `x-amz-meta-content-md5`
+     `x-amz-meta-content-length`
+   Presign the upload request.
+
+   Return an HTTP request template
+   {
+     "url": "string",
+     "method": "PUT",
+     "headers": [
+       {
+         "name": "Content-Type",
+         "value": "image/png",
+       }
+     ],
+   }
+
+ - POST /_asset/sign
+   Require Master Key
+
+   {
+     "assets": [
+       {
+         "asset_id": "myasset.jpg"
+       }
+     ]
+   }
+
+   {
+     "urls": [
+       {
+         "asset_id": "myasset.jpg",
+         "url": "https://<app-name>.sg.com/_asset/get/myasset.jpg?..."
+       }
+     ]
+   }
+
+ - GET /_asset/get/<asset-id>
+   Detect the media type using libmagic
+   If the file is small enough (aliyun is 20MiB), allow processing.
+   Consider how to support Client Hints
+     - https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/client-hints/#responsive_images
+   Set Cache-Control, Vary, Expires
+   The image processing API should look like https://www.alibabacloud.com/help/doc-detail/44686.htm?spm=a2c63.p38356.b99.654.13c554f9oqAdLy
+   Caching could be added in the future.
+
+1. Specify Asset Gear Client SDK
+  - web
+    - If the presigned request is multipart form, use the native FormData as Body.
+    - If the presigned request is anything else, use the given blob as Body.
+    - skygear.asset.upload(blob: Blob, options?: { contentType?: "string" })
+  - node
+    - If the presigned request is multipart form, use the npm package "form-data"
+    - If the presigned request is anything else, set data as Body directly because "node-fetch" supports Buffer and stream.Readable Body.
+    - skygear.asset.upload(data: Buffer | stream.Readable, options: { contentType: "string" })
+  - react native
+    - Require rn-fetch-blob as peer dependency.
+    - skygear.asset.upload(localFilePath: string, options: { contentType: "string" })
+  - common
+    - Image processing query builder
+
+1. Write usecases on how to interact with Asset Gear API and Asset Gear Client SDK
+
+1. Revamp the tenant config of various templates
+  ```golang
+  type TemplateConfigurationType string
+  const (
+    TemplateConfigurationTypeForgotPasswordEmailTXT             TemplateConfigurationType = "forgot_password_email.txt"
+    TemplateConfigurationTypeForgotPasswordEmailHTML            TemplateConfigurationType = "forgot_password_email.html"
+    TemplateConfigurationTypeForgotPasswordResetHTML            TemplateConfigurationType = "forgot_password_reset.html"            // Keep URL option
+    TemplateConfigurationTypeForgotPasswordSuccessHTML          TemplateConfigurationType = "forgot_password_success.html"          // Keep URL option
+    TemplateConfigurationTypeForgotPasswordErrorHTML            TemplateConfigurationType = "forgot_password_error.html"            // Keep URL option
+    TemplateConfigurationTypeWelcomeEmailTXT                    TemplateConfigurationType = "welcome_email.txt"
+    TemplateConfigurationTypeWelcomeEmailHTML                   TemplateConfigurationType = "welcome_email.html"
+    TemplateConfigurationTypeUserVerificationGeneralErrorHTML   TemplateConfigurationType = "user_verification_general_error.html"  // Keep URL option
+    TemplateConfigurationTypeUserVerificationMessageTXT         TemplateConfigurationType = "user_verification_message.txt"
+    TemplateConfigurationTypeUserVerificationMessageHTML        TemplateConfigurationType = "user_verification_message.html"
+    TemplateConfigurationTypeUserVerificationSuccessHTML        TemplateConfigurationType = "user_verification_success.html"        // Keep URL option
+    TemplateConfigurationTypeUserVerificationErrorHTML          TemplateConfigurationType = "user_verification_error.html"          // Keep URL option
+  )
+  type TemplateConfiguration struct {
+    Type    string
+    Key     string
+    AssetID string
+  }
+  type TenantConfiguration struct {
+    // ...
+    Templates []TemplateConfiguration
+  }
+  ```
+
+1. Introduce `templates` directory beside `skygear.yaml`
+  How to store file hash
+  `skycli config list-templates`
+  `skycli config update-templates`
+  Avoid update unchanged files
+
+  /templates[/<language-tag>][/<key>]/<type>
+  /templates/welcome_email.txt
+  /templates/welcome_email.html

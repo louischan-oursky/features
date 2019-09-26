@@ -1,0 +1,11 @@
+func PreSignV4(req http.Request, accessKeyID, secretAccessKey, sessionToken, location string, expires int64) *http.Request
+
+`req` is the actual request
+`accessKeyID` is something I know
+`secretAccessKey` is something I know
+
+`sessionToken` can be empty string.
+
+`location` is the AWS S3 region
+Can be derived with `bucketName`
+func (c Client) GetBucketLocation(bucketName string) (string, error)
