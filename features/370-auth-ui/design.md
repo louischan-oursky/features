@@ -389,3 +389,4 @@ All pages served by Auth UI have `Content-Security-Policy: frame-ancestors 'self
 ## Appendix
 
 - [Implementation Notes](./notes.md)
+- [SDK](./sdk.md)
