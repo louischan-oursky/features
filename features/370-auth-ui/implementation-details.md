@@ -6,6 +6,10 @@ This target audience of this document is the implementers.
 
 The existing JSON-based API is a simple API that is unaware of OpenID Connect with PKCE. The implementation of Auth UI will share most of the underlying logic with the JSON API. Both will be maintained.
 
+## Auth UI is a traditional Web application
+
+It uses cookie to store its state, URL query string to alter UI behavior. For example, the URL `/_auth/_/authorize` remains unchanged even the authentication requires few steps.
+
 ## Validation on the query parameter redirect_uri
 
 If the scheme and the host:port matches the current request, then `/_auth/_/*` is always allowed. This ensures Auth UI can redirect to itself without any configuration. This is crucial for verification to work.
