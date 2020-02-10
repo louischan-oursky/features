@@ -1,4 +1,4 @@
-# Implementation Notes
+# Implementation Details
 
 This target audience of this document is the implementers.
 
