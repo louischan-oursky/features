@@ -2,6 +2,10 @@
 
 This target audience of this document is the implementers.
 
+## Relation between Auth UI and the existing JSON-based API
+
+The existing JSON-based API is a simple API that is unaware of OpenID Connect with PKCE. The implementation of Auth UI will share most of the underlying logic with the JSON API. Both will be maintained.
+
 ## Validation on the query parameter redirect_uri
 
 If the scheme and the host:port matches the current request, then `/_auth/_/*` is always allowed. This ensures Auth UI can redirect to itself without any configuration. This is crucial for verification to work.
