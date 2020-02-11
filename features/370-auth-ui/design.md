@@ -16,8 +16,8 @@ Table of Content
    * [The authorization page](#the-authorization-page)
    * [The signup page](#the-signup-page)
    * [The signup password page](#the-signup-password-page)
-   * [The verification page](#the-verification-page)
 * [The settings endpoint](#the-settings-endpoint)
+* [The verification endpoint](#the-verification-endpoint)
 * [The logout endpoint](#the-logout-endpoint)
 * [Omitted features](#omitted-features)
 * [Future improvements](#future-improvements)
@@ -182,10 +182,6 @@ The signup password page displays a visibility toggleable password field with pa
 - [ ] At least 8 characters long
 ```
 
-### The verification page
-
-The verification page allows the user to verify their login ID. This page requires authenticated user. Unauthenticated access is redirected to the authorization page. Verification is not enforced by the authentication flow. For example, if auto send verification email is enabled, the email is sent behind the scene and the user is redirected to the application immediately after authentication success.
-
 ## The settings endpoint
 
 The settings endpoint `/_auth/_/settings` allows the user to manage their account. Features include but not limited to:
@@ -196,6 +192,10 @@ The settings endpoint `/_auth/_/settings` allows the user to manage their accoun
 - Add / Update / remove login ID
 - Manage identities
 - Manage sessions
+
+## The verification endpoint
+
+The verification endpoint `/_auth/_/verify` allows the user to verify their login ID. This page requires authenticated user. Unauthenticated access is redirected to the authorization page. Verification is not enforced by the authentication flow. For example, if auto send verification email is enabled, the email is sent behind the scene and the user is redirected to the application immediately after authentication success.
 
 ## The logout endpoint
 
