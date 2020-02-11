@@ -157,13 +157,13 @@ Separating the login ID and the password into two pages allow future improvement
 The signup page displays the first login ID key default. Other login ID keys are available to choose.
 
 ```
-Sign with email
+Sign up with email
 |--------------------------|  |----------|
 | Enter in your email here |  | Continue |
 |--------------------------|  |----------|
 
-Sign with phone instead.
-Sign with username instead.
+Sign up with phone instead.
+Sign up with username instead.
 ```
 
 ### The signup password page
