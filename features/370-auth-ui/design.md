@@ -4,6 +4,135 @@
 
 Auth UI is a standalone component that aims to be a OpenID Provider. It is a traditional web application that does **NOT** share the session with Auth Gear. However, it provides access to most of the Auth Gear features.
 
+## Relationship among Auth UI, Auth Gear, API client, Microservices and Data
+
+### Past Relationship
+
+In the past, there is no Auth UI, Auth Gear and microservices access Data via the API key of a API client.
+
+### Diagram of Past Relationship
+
+Below is a diagram to illustrate to the past relationship.
+
+```
+                 +--------+
+                 |  Data  |
+                 +----+---+
+                      ^
+                      |
+                      | Access
+                      |
+               +------+------+
+               |  Auth Gear  |
+               +------+------+
+                      |
+                      | Validate API key
+                      |
+              +-------+------+
+              |  API Client  |
+              +-------+------+
+                      ^
+                      |
+         +------------+----------+  Identify with API Key
+         |                       |
+         |                       |
+         |                       |
++--------+--------+          +---+---+
+|  Microservices  |          |  SDK  |
++-----------------+          +-------+
+```
+
+### New Relationship
+
+After the introduction of Auth UI, it acts an OpenID Provider (OP). API Client is now treated as Relying Party (RP). Microservices and Auth Gear use the API Key of a API Client to identify themselves as RP.
+
+Auth UI does not support Authorization at the moment. To be backward compatible, existing access tokens can access Data without any restriction. That means the user can change password, list sessions of **ALL** API clients, etc, via Auth Gear. The new access tokens issued by Auth UI are intended to be consumed in the same fashion so the new and the old behave the same.
+
+In the future Auth UI can act as an OP for another Skygear App. At that moment Authorization must be introduced. Existing API clients are considered as first party and have the largest scopes. The RP Skygear App must register itself as a new kind of API client with the OP Skygear App. This is analogous to using access token issued by Google cannot access Google API to change Google account password unless the user authorize the corresponding scope.
+
+Auth UI as a OP has its own session management. Auth UI session is stateful and is stored in HTTP cookie. The session management API of Auth Gear cannot list, get or delete Auth UI session. Auth UI session and Auth Gear session are not interchangeable. This is analogous to a website utilizing Google as an OP cannot list the sessions the user have on `https://google.com`.
+
+### Diagram of New Relationship
+
+Below is a diagram to illustrate to the new relationship
+
+```
+                                        Skygear App
+
+
+                      Access Directly               Access either as First Party
+                                        +--------+      or with proper scopes
+                       +--------------->+  Data  +<----------------+
+                       |                +--------+                 |
+                       |                                           |
+                       |                                           |
+                 +-----+-----+       OP              RP     +------+------+
+                 |  Auth UI  +---------------+--------------+  Auth Gear  |
+                 +-----+-----+               |              +------+------+
+                       ^                     |                     ^
+                       |                     |                     |
+                       |                     |                     |
+                       |                     |                     |
+                       |                     v                     |
+             +---------+---------+   +-------+------+   +----------+----------+
+             |  Auth UI Session  |   |  API Client  |   |  Auth Gear Session  |
+             +---------+---------+   +-------+------+   +----------+----------+
+                       |                     ^                     |
+                       |                     |                     |
+Access via User Agent  |                     |  Identity with API  |
+                       |                     |                     |
+                       |                 +---+---+                 |
+                       +-----------------+  SDK  +-----------------+
+                                         +-------+
+```
+
+## Session compatibility with Auth Gear and the SDK
+
+In handling the Authentication Request in the Authorization Endpoint, Auth UI creates a session and store it in cookie. Finally it redirects the user agent back to the app with a authorization code.
+
+In a typical Authorization Code Flow, the app should send a Token Request to the Token Endpoint of Auth UI to obtain a Token Response. However, Token Response is incompatible with Auth Gear and the SDK, where the session transport can either be cookie or header.
+
+To mitigate this compatibility problem, Auth Gear, which shares the same domain with microservices, has an endpoint to forward the Token Request to Auth UI and transform the Token Response to a compatible response.
+
+Below is a flow chart demonstrating the flow.
+
+```
+ SDK                                                     Auth UI                                       Auth Gear
+  +                                                         +                                              +
+  |               Send Authentication Request               |                                              |
+  +--------------------------------------------------------->                                              |
+  |                                                         |                                              |
+  |                           +-----------------------------+                                              |
+  |                           |    Authenticate the user    |                                              |
+  |                           +----------------------------->                                              |
+  |                                                         |                                              |
+  |                                                         |                                              |
+  |                      Write cookie                       |                                              |
+  |     Redirect to SDK  with Authentication Response       |                                              |
+  <---------------------------------------------------------+                                              |
+  |                                                         |               Send Token Request             |
+  +------------------------------------------------------------------------------------------------------->+
+  |                                                         |                                              |
+  |                                                         |             Forward Token Request            |
+  |                                                         <----------------------------------------------+
+  |                                                         |                                              |
+  |                                                         |             Return Token Response            |
+  |                                                         +---------------------------------------------->
+  |                                                         |                                              |
+  |                                                         |            Transform Token Response          |
+  |                                                         |              Write cookie or body            |
+  <--------------------------------------------------------------------------------------------------------+
+  |                                                         |                                              |
+  |                                                         |                                              |
+  |                                                         |                                              |
+  |                                                         |                                              |
+  |                                                         |                                              |
+  |                                                         |                                              |
+  +                                                         +                                              +
+```
+
+This flow allows both Auth UI and Auth Gear to write host-only cookie.
+
 ## Domain
 
 Auth UI is available for both default domain and custom domain.
@@ -27,65 +156,6 @@ Auth UI cannot be served in the same domain with the app. So Auth UI is not avai
 |App|`https://myapp.skygearapp.com`|N/A|`https://www.myapp.com`|N/A|
 |Auth Gear|`https://myapp.skygearapp.com/_auth/`|N/A|`https://www.myapp.com/_auth/`|N/A|
 |Auth UI|N/A|`https://accounts.myapp.skygearapp.com`|N/A|`https://accounts.myapp.com`|
-
-## API client
-
-API client is now treated as OAuth application. Existing API clients are treated as OAuth applications with the largest scopes. For example, using an existing access token can access the session management API of Auth Gear, to list sessions of all API clients.
-
-## OAuth Authorization
-
-Auth UI does not OAuth authorization at the moment. All access tokens it issue behave in the same way as existing access tokens. That is, the tokens are issued with the largest scopes.
-
-## Auth UI session
-
-Auth UI has its own session management. Auth UI session is stateful and is stored in HTTP cookie. The session management API of Auth Gear cannot list, get or delete Auth UI session. Auth UI session and Auth Gear session are not interchangeable.
-
-## Session compatibility with Auth Gear and the SDK
-
-In handling the Authentication Request in the Authorization Endpoint, Auth UI creates a session and store it in cookie. Finally it redirects the user agent back to the app with a authorization code.
-
-In a typical Authorization Code Flow, the app should send a Token Request to Auth UI to obtain a Token Response. However, Token Response is compatible with Auth Gear and the SDK in which the session transport can either be cookie or header.
-
-To mitigate this compatibility problem, Auth Gear, which shares the same domain with microservices, has an endpoint to proxy the Token Request to Auth UI and transform the Token Response to a compatible response.
-
-Below is a flow chart demonstrating the flow.
-
-```
-app                                                     Auth UI                                       Auth Gear
- +                                                         +                                              +
- |               Send Authentication Request               |                                              |
- +--------------------------------------------------------->                                              |
- |                                                         |                                              |
- |                           +-----------------------------+                                              |
- |                           |    Authenticate the user    |                                              |
- |                           +----------------------------->                                              |
- |                                                         |                                              |
- |                                                         |                                              |
- |                      Write cookie                       |                                              |
- |     Redirect to the app with Authentication Response    |                                              |
- <---------------------------------------------------------+                                              |
- |                                                         |               Send Token Request             |
- +------------------------------------------------------------------------------------------------------->+
- |                                                         |                                              |
- |                                                         |             Forward Token Request            |
- |                                                         <----------------------------------------------+
- |                                                         |                                              |
- |                                                         |             Return Token Response            |
- |                                                         +---------------------------------------------->
- |                                                         |                                              |
- |                                                         |            Transform Token Response          |
- |                                                         |              Write cookie or body            |
- <--------------------------------------------------------------------------------------------------------+
- |                                                         |                                              |
- |                                                         |                                              |
- |                                                         |                                              |
- |                                                         |                                              |
- |                                                         |                                              |
- |                                                         |                                              |
- +                                                         +                                              +
-```
-
-This flow allows both Auth UI and Auth Gear to write host-only cookie.
 
 ## Logout
 
