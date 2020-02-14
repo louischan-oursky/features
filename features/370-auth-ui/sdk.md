@@ -6,37 +6,36 @@ The following new methods are added to access Auth UI.
 
 ```typescript
 interface LoginOptions {
+  // If custom domain is used, this specify the custom domain.
+  endpoint?: string;
   onUserDuplicate?: "abort" | "merge" | "create";
 }
 
 // Open a WebView to login. If it is canceled, the promise will be rejected.
-function loginWithWebUI(redirectURI: string, options?: LoginOptions): Promise<User>;
+function authorizeWithWeb(redirectURI: string, options?: LoginOptions): Promise<{
+  authorizationCode: string;
+}>;
 
-// Open a WebView to access the given Auth UI path.
-// It interacts with the native cookie storage to ensure
-// the session is attached to the WebView correctly.
-function openWebUI(path: string): Promise<void>;
+function exchangeToken(authorizationCode: string): Promise<User>;
+
+// Open a WebView that may retain the cookie of a previous session.
+function openURL(url: string): Promise<void>;
 ```
 
 ## Web
 
 ```typescript
 interface LoginOptions {
+  // If custom domain is used, this specify the custom domain.
+  endpoint?: string;
   onUserDuplicate?: "abort" | "merge" | "create";
 }
 
 // Redirect the current window to Auth UI.
-function loginWithWebUI(redirectURI: string, options?: LoginOptions): Promise<void>;
+function authorizeWithWeb(redirectURI: string, options?: LoginOptions): Promise<void>;
 
-// Retrieve the result when being redirected back.
-function getAuthResult(): Promise<User | null>;
-
-// Construct the URL to the given Auth UI path.
-// The developer can then either use it in:
-// 1. <iframe src>
-// 2. window.location
-// 3. window.open()
-function getWebUI(path: string): string;
+// If authorizationCode is not given, then it is retrieved from window.location
+function exchangeToken(authorizationCode?: string): Promise<User>;
 ```
 
 ## Use cases
@@ -51,7 +50,10 @@ import {Button, View} from "react-native";
 function AuthenticationScreen({ navigate } : { navigate: (screenName: string) => void }) {
   const onPress = useCallback(() => {
     try {
-      const user = await skygear.auth.loginWithWebUI("myappid://anyhost/anypath");
+      const { authorizationCode } = await skygear.auth.authorizeWithWeb("myappid://anyhost/anypath", {
+        endpoint: "https://accounts.myapp.com",
+      });
+      const user = await skygear.auth.exchangeToken(authorizationCode);
       // If the application requires verification, check if the user is verified.
       if (!user.isVerified) {
         navigate("VerificationScreen");
@@ -84,7 +86,7 @@ function SettingsScreen() {
   }, []);
 
   const onPressSecuritySettings = useCallback(() => {
-    skygear.auth.openWebUI("/settings").catch(e => {
+    skygear.auth.openURL("https://accounts.myapp.com").catch(e => {
       // The error here should be unrecoverable.
     });
   }, []);
@@ -106,7 +108,7 @@ import skygear from "@skygear/web";
 
 function AuthenticationScreen() {
   const onClick = useCallback(() => {
-    await skygear.auth.loginWithWebUI("https://myapp.skygearapps.com/continue");
+    await skygear.auth.authorizeWithWeb("https://www.myapp.com/continue");
   }, []);
   return (
     <div>
@@ -118,21 +120,19 @@ function AuthenticationScreen() {
 function ContinueScreen() {
   useEffect(() => {
     try {
-      const user = await skygear.auth.getAuthResult();
-      if (user == null) {
-        // This route is likely to be accessed manually.
-        // Redirect to home
-        window.location = "https://myapp.skygearapps.com/home";
+      const user = await skygear.auth.exchangeToken();
+      if (!user.isVerified) {
+        window.location = "https://myapp.skygearapps.com/verify";
       } else {
-        if (!user.isVerified) {
-          window.location = "https://myapp.skygearapps.com/verify";
-        } else {
-          window.location = "https://myapp.skygearapps.com/home";
-        }
+        window.location = "https://myapp.skygearapps.com/home";
       }
     } catch (e) {
       // Handle the error properly here.
       // For example, duplicated user.
+      // Or
+      // This route is likely to be accessed manually.
+      // Redirect to home
+      window.location = "https://myapp.skygearapps.com/home";
     }
   }, []);
   return (
@@ -148,7 +148,7 @@ import React, { useCallback } from "react";
 import skygear from "@skygear/web";
 
 function SettingsScreen() {
-  const url = skygear.auth.getWebUI("/settings");
+  const url = "https://accounts.myapp.com";
   const onClickOpenSettingsAsPopup = useCallback(() => {
     window.open(url);
   }, []);
