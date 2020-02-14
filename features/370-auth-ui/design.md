@@ -356,6 +356,8 @@ The settings endpoint `/settings` allows the user to manage their account. Featu
 
 The verification endpoint `/verify` allows the user to verify their login ID. This page requires authenticated user. Unauthenticated access is redirected to the authorization page. Verification is not enforced by the authentication flow. For example, if auto send verification email is enabled, the email is sent behind the scene and the user is redirected to the application immediately after authentication success.
 
+The verification email sent by Auth Gear includes this verification endpoint. The implication is that if the user has logged in Auth Gear but not Auth UI, they have to authenticate again to verify.
+
 ## Omitted features
 
 Auth UI does not support authenticate with Custom Token.
