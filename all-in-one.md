@@ -1,5 +1,26 @@
 # Authgear
 
+## SSO
+
+Authgear integrates with various OAuth 2 IdPs. Since Authgear is a server, the only implemented flow is the authorization code flow.
+
+If the specific OAuth 2 IdP implements OIDC, then the integration conforms to OIDC instead.
+
+### OIDC IdPs
+
+The following IdPs are integrated with OIDC:
+
+- Google
+- Apple
+- Azure AD
+
+### OAuth 2 IdPs
+
+The following IdPs does not support OIDC. The integration is provider-specific.
+
+- LinkedIn
+- Facebook
+
 ## Session Management
 
 Sessions in Authgear are stateful. The user can manage sessions. The developer can configure session characteristics such as lifetime and idle timeout.
