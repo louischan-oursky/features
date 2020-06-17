@@ -8,10 +8,11 @@ A user has many identities. A user has many authenticators.
 
 An identity is used to look up a user.
 
-2 types of identity are supported.
+3 types of identity are supported.
 
 - Login ID
 - OAuth
+- Anonymous
 
 ### Identity Claims
 
@@ -24,6 +25,44 @@ The claims are used to detect duplicate identity. For example, an Email Login ID
 ### OAuth Identity
 
 OAuth identity is external identity from supported OAuth 2 IdPs.
+
+### Anonymous Identity
+
+A user either has no anonymous identity, or have exactly one anonymous identity. A user with anonymous identity is considered as anonymous user.
+
+Anonymous identity has the following fields:
+
+- Public Key: It is represented as a JWK and stored in the database.
+- Private Key: It is kept privately and securely in the device storage.
+- Key ID: A unique random string for efficient lookup.
+
+From the user point of view, they do not perform any explicit authentication. Therefore
+
+- Anonymous user cannot have secondary authenticators
+- Anonymous user cannot access the settings page
+
+#### Anonymous Identity JWT
+
+The server verifies the validity of the key-pair by verify a JWT. A challenge is requested by client on demand, it is one-time use and short-lived. The JWT is provided in the `login_hint` parameter.
+
+#### Anonymous Identity JWT headers
+
+- `typ`: Must be the string `vnd.skygear.auth.anonymous-request`.
+
+#### Anonymous Identity JWT payload
+
+- `challenge`: The challenge returned by the server.
+- `action`: either `auth` or `promote`
+
+### Anonymous Identity Promotion
+
+Anonymous user can be promoted to normal user by adding a new identity. When an anonymous user is promoted:
+
+- A new non-anonymous identity is added.
+- The anonymous identity is deleted.
+- A new session is created.
+
+The promotion flow is the same as the normal OIDC authorization code flow.
 
 ### Login ID Identity
 
@@ -223,6 +262,12 @@ Add Email login ID to a user with 1 OAuth Identity
 - Setup OOB-OTP authenticator of the given email address
 
 ## OIDC
+
+### The token endpoint
+
+#### Custom grant type
+
+The token endpoint supports a custom grant type `urn:skygear-auth:params:oauth:grant-type:anonymous-request` to authenticate and issue tokens directly for anonymous user. When this grant type is used, the `jwt` parameter is [the JWT specified here](#anonymous-Identity-jwt)
 
 ### `amr` claim
 
