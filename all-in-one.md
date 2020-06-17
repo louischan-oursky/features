@@ -951,3 +951,11 @@ Add `enabled` or `disabled` flag only if necessary, such as toggling on/off of a
 ### References
 
 - [Kubernetes api conventions](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md)
+
+## Glossory
+
+The sections defines the terms used in documentation, specification and technical discussion.
+
+- User: The person who owns an account in Authgear.
+- Developer: The developer who uses Authgear.
+- Configuration: The configuration of Authgear.
