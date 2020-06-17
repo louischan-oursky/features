@@ -1,5 +1,113 @@
 # Authgear
 
+## User
+
+A user has many identities. A user has many authenticators.
+
+## Identity
+
+An identity is used to look up a user.
+
+2 kinds of identity are supported.
+
+- Login ID
+- OAuth
+
+### Identity Claims
+
+The information of an identity are mapped to [Standard Claims](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims)
+
+Currently, only `email` is mapped.
+
+The claims are used to detect duplicate identity. For example, an Email Login ID and the email claim of an OAuth Identity. This prevents duplicate user when the user forgets the original authentication method.
+
+### OAuth Identity
+
+OAuth identity is external identity from supported OAuth 2 IdPs.
+
+### Login ID Identity
+
+A login ID has the following attributes:
+
+- Key
+- Type
+- Normalized value
+- Original value
+- Unique key
+
+A user can have many login IDs. For example, a user can have both an email and a phone number as their login IDs.
+
+### Login ID Key
+
+Login ID key is symbolic name assigned by the developer.
+
+### Login ID Type
+
+Login ID type determines the validation, normalization and unique key generation rules.
+
+#### Email Login ID
+
+##### Validation of Email Login ID
+
+- [RFC5322](https://tools.ietf.org/html/rfc5322#section-3.4.1)
+- Disallow `+` sign in the local part (Configurable, default OFF)
+
+##### Normalization of Email Login ID
+
+- Case fold the domain part
+- Case fold the local part (Configurable, default ON)
+- Perform NFKC on the local part
+- Remove all `.` signs in the local part (Configurable, default OFF)
+
+##### Unique key generation of Email Login ID
+
+- Encode the domain part of normalized value to punycode (IDNA 2008)
+
+#### Username Login ID
+
+##### Validation of Username Login ID
+
+- Disallow confusing homoglyphs
+- Validate against PRECIS IdentifierClass profile
+- Disallow builtin reserved usernames (Configurable, default ON)
+- Disallow developer-provided reserved usernames (Configurable, default empty list)
+- Check ASCII Only (`a-zA-Z0-9_-.`) (Configurable, default ON)
+
+##### Normalization of Username Login ID
+
+- Case fold (Configurable, default ON)
+- Perform NFKC
+
+##### Unique key generation of Username Login ID
+
+The unique key is the normalized value.
+
+#### Phone Login ID
+
+##### Validation of Phone Login ID
+
+- Check E.164 format
+
+##### Normalization of Phone Login ID
+
+Since well-formed phone login ID is in E.164 format, the normalized value is the original value.
+
+##### Unique key generation of Phone Login ID
+
+The unique key is the normalized value.
+
+#### Raw Login ID
+
+Raw login ID does not any validation or normalization. The unique key is the same as the original value. Most of the use case of login ID should be covered by the above login ID types.
+
+### Optional Login ID Key during authentication
+
+The login ID provided by the user is normalized against the configured set of login ID keys. If exact one identity is found, the user is identified. Otherwise the login ID is ambiguous. Under default configuration, Email, Phone and Username login ID are disjoined sets so no ambiguity will occur. (Email must contain `@`; Username does not contain `@` or `+`; Phone must contain `+` and does not contain `@`)
+
+### The purpose of unique key
+
+If the domain part of a Email login ID is internationalized, there is 2 ways to represent the login ID, either in Unicode or punycode-encoded. To ensure the same logical Email login ID always refer to the same user, unique key is generated.
+
 ## Authenticator
 
 Authgear supports various kinds of authenticator. Authenticator can be primary, secondary or both.
@@ -178,7 +286,7 @@ Sessions in Authgear are stateful. The user can manage sessions. The developer c
 
 ### Session Attributes
 
-Session has the following attributes
+Session has the following attributes:
 
 - ID
 - User ID
@@ -188,6 +296,8 @@ Session has the following attributes
 - Creation IP
 - Last Access IP
 - User Agent
+
+In particular, session does not have reference to involved identity and authenticators in the authentication. Removal of identity and authenticators does not invalidate session.
 
 ### Session Management
 
