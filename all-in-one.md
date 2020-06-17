@@ -8,7 +8,7 @@ A user has many identities. A user has many authenticators.
 
 An identity is used to look up a user.
 
-2 kinds of identity are supported.
+2 types of identity are supported.
 
 - Login ID
 - OAuth
@@ -110,7 +110,17 @@ If the domain part of a Email login ID is internationalized, there is 2 ways to 
 
 ## Authenticator
 
-Authgear supports various kinds of authenticator. Authenticator can be primary, secondary or both.
+Authgear supports various types of authenticator. Authenticator can be primary, secondary or both.
+
+Authenticators has priorities. The first authenticator is the default authenticator in the UI.
+
+### Primary Authenticator
+
+Primary authenticator authenticates the identity. Each identity has specific applicable primary authenticators. For example, OAuth Identity does not have any applicable primary authenticators.
+
+### Secondary Authenticator
+
+Secondary authenticators are additional authentication methods to ensure higher degree of confidence in authenticity.
 
 ### Password Authenticator
 
@@ -156,7 +166,105 @@ The codes is cryptographically secure random 10-letter string in Crockford's Bas
 
 ## Authentication
 
-TODO: Document secondary_authentication_mode
+- The developer can configure enabled identity types. By default, all supported identity types are enabled.
+- The developer can configure enabled primary authenticators. By default, Password Authenticator is enabled.
+- The developer can configure enabled secondary authenticators. By default, TOTP, OOB-OTP and Bearer Token Authenticator are enabled.
+- The developer can configure whether secondary authentication is necessary.
+  - `required`: secondary authentication is required. Every user must have at least one secondary authenticator.
+  - `if_exists`: secondary authentication is opt-in. If the user has at least one secondary authenticator, then the user must perform secondary authentication.
+  - `if_requested`: secondary authentication is purely optional even the user has at least one secondary authenticator.
+
+## Interaction
+
+Manipulation of user, identities and authenticators are driven by interaction. An interaction starts with an intent and has various steps. When all required steps have been gone through, the interaction is committed to the database.
+
+### Login intent
+
+The login intent authenticate existing user. It involves the following steps:
+
+- Select identity
+- Authenticate with primary authenticator
+- Authenticate with secondary authenticator / Setup secondary authenticator
+
+For example,
+
+Login with login ID and password
+
+- Select identity by providing a login ID
+- Authenticate with password
+
+### Signup intent
+
+The signup intent creates a new user. It involves the following steps:
+
+- Create identity
+- Setup primary authenticator
+- Setup secondary authenticator
+
+For example,
+
+Login in with Google
+
+- Create identity by perform OIDC authorization code flow with Google
+- No primary authenticator is required
+
+### Add Identity intent
+
+The add identity intent adds a new identity to a user. It involves the following steps:
+
+- Create identity
+- Setup primary authenticator
+
+For example,
+
+Add Email login ID to a user with 1 OAuth Identity
+
+- The user provides the email address
+- Setup OOB-OTP authenticator of the given email address
+
+## OIDC
+
+### `amr` claim
+
+To indicate authenticator used in authentication, `amr` claim is used in OIDC ID token.
+
+`amr` claim is an array of string. It includes authentication method used:
+- If secondary authentication is performed: `mfa` is included.
+- If password authenticator is used: `pwd` is included.
+- If any OTP (TOTP/OOB-OTP) is used: `otp` is included.
+- If WebAuthn is used: `hwk` is included.
+
+If no authentication method is to be included in `amr` claim, `amr` claim would be omitted from the ID token.
+
+### `acr` claim
+
+If any secondary authenticator is performed, `acr` claim would be included in ID token with value `http://schemas.openid.net/pape/policies/2007/06/multi-factor`.
+
+To perform step-up authentication, developer can pass a `acr_values` of  `http://schemas.openid.net/pape/policies/2007/06/multi-factor` to the authorize endpoint.
+
+### `login_hint` parameter
+
+Developer can optionally pre-select the identity to use using `login_hint` parameter. `login_hint` should be a URL of form `https://auth.skygear.io/login_hint?<query params>`.
+
+The following are recognized query parameters:
+- `type`: Identity type
+- `user_id`: User ID
+- `email`: Email claim of the user
+- `oauth_provider`: OAuth provider ID
+- `oauth_sub`: Subject ID of OAuth provider
+- `jwt`: JWT object
+
+For examples:
+- To login with email `user@example.com`:
+    `https://auth.skygear.io/login_hint?type=login_id&email=user%40example.com`
+- To login with Google OAuth provider:
+    `https://auth.skygear.io/login_hint?oauth_provider=google`
+- To signup/login as anonymous user:
+    `https://auth.skygear.io/login_hint?type=anonymous&jwt=...`
+
+The UI tries to match an appropriate identity according to the provided parameters. If exactly one identity is matched, the identity is selected. Otherwise `login_hint` is ignored.
+
+Unknown parameters are ignored, and invalid parameters are rejected. However, if user is already logged in and the provided hint is not valid for the current user, it will be ignored instead.
 
 ## Templates
 
