@@ -1,5 +1,55 @@
 # Authgear
 
+## Authenticator
+
+Authgear supports various kinds of authenticator. Authenticator can be primary, secondary or both.
+
+### Password Authenticator
+
+Password authenticator is a primary authenticator. Every user has at most 1 password authenticator.
+
+### TOTP Authenticator
+
+TOTP authenticator is either primary or secondary.
+
+TOTP authenticator is specified in [RFC6238](https://tools.ietf.org/html/rfc6238) and [RFC4226](https://tools.ietf.org/html/rfc4226).
+
+In order to be compatible with existing authenticator applications like Google Authenticator, the following parameters are chosen:
+
+- The algorithm is always HMAC-SHA1.
+- The code is always 6-digit long.
+- The valid period of a code is always 30 seconds.
+
+To deal with clock skew, the code generated before or after the current time are also accepted.
+
+### OOB-OTP Authenticator
+
+Out-of-band One-time-password authenticator is either primary or secondary.
+
+OOB-OTP authenticator is bound to a verified recipient. The recipient can be a verified email address or a verified phone number that can receive SMS messages.
+
+The OTP is 4-digit long.
+
+### Bearer Token Authenticator
+
+Bearer token authenticator is secondary.
+
+A bearer token is generated during MFA when the user opt to skip MFA next time.
+
+The token is a cryptographically secure random string of 256 bits (32 bytes) in hex encoding.
+
+### Recovery Code Authenticator
+
+Recovery code authenticator is secondary.
+
+Recovery codes are generated when the user adds a secondary authenticator first time.
+
+The codes is cryptographically secure random 10-letter string in Crockford's Base32 alphabet.
+
+## Authentication
+
+TODO: Document secondary_authentication_mode
+
 ## Templates
 
 Authgear serves web pages and send email and SMS messages. Templates allow the developer to provide localization or even customize the default ones.
